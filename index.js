@@ -1,63 +1,18 @@
-var http = require('http');
-var url = require('url');
-var stringDecoder = require('string_decoder').StringDecoder;
-var config = require('./lib/config');
-var handlers = require('./lib/handlers');
-var helpers = require('./lib/helpers');
+var server = require('./lib/server');
+var workers = require('./lib/workers');
 
-var server = http.createServer(function(req, res){
-  var parsedUrl = url.parse(req.url, true);
+var app = {};
+// init function
+app.init = function(){
+// start server
+server.init();
 
-  var path = parsedUrl.pathname;
-  var trimmedPath = path.replace(/^\/+|\/+$/g, '');
+// start workers
+workers.init();
+};
 
-  var queryStringObject = parsedUrl.query;
+// execute
+app.init();
 
-  var method = req.method.toLowerCase();
-
-  var headers = req.headers
-
-  var decoder = new stringDecoder('utf-8');
-
-  var buffer = '';
-  req.on('data', function(data){
-    buffer += decoder.write(data);
-  });
-  req.on('end', function(){
-    buffer += decoder.end();
-    var chosenHandler = typeof(router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound
-
-    var data = {
-      'trimmedPath': trimmedPath,
-      'queryStringObject': queryStringObject,
-      'method': method,
-      'headers': headers,
-      'payload': helpers.parseJsonToBbject(buffer)
-
-    };
-
-    chosenHandler(data, function(statusCode, payload) {
-      statusCode = typeof(statusCode) == 'number' ? statusCode : 200
-      payload = typeof(payload) == 'object' ? payload : { }
-
-      var payloadString = JSON.stringify(payload);
-      res.setHeader('Content-Type', 'application/json')
-      res.writeHead(statusCode);
-
-      res.end(payloadString);
-      console.log('Return response: ',statusCode, payloadString);
-    });
-
-  });
-
-});
-server.listen(config.port, function(){
-  console.log("The server is listening on port: "+ config.port+ " in "+config.envName+" mode" );
-})
-
-
-var router = {
-  'ping': handlers.ping,
-  'users': handlers.users,
-  'tokens': handlers.tokens
-}
+// export app
+module.exports = app
